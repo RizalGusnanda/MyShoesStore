@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">MyShoeStore</string>
+    <string name="scroll_to_top">Scroll to Top</string>
+    <string name="search_shoes">Cari Sepatumu!</string>
+</resources>
