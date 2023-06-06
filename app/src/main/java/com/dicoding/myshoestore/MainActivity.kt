@@ -7,7 +7,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.dicoding.myshoestore.ui.about.ShoeAboutScreen
+import com.dicoding.myshoestore.ui.detail.ShoeDetailScreen
 import com.dicoding.myshoestore.ui.home.MyShoeStoreApp
+import com.dicoding.myshoestore.ui.navigation.Screen
 import com.dicoding.myshoestore.ui.theme.MyShoesStoreTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,7 +26,35 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    MyShoeStoreApp()
+                    val navController = rememberNavController()
+                    NavHost(navController = navController, startDestination = Screen.Home.route) {
+                        composable(Screen.Home.route) {
+                            MyShoeStoreApp(navController)
+                        }
+                        composable(Screen.About.route) {
+                            ShoeAboutScreen(navController, onBackClick = {
+                                navController.navigate(Screen.Home.route) {
+                                    popUpTo(Screen.Home.route) {
+                                        inclusive = true
+                                    }
+                                }
+                            })
+                        }
+                        composable(Screen.DetailShoe.route) { backStackEntry ->
+                            val shoeId = backStackEntry.arguments?.getString("shoeId")?.toInt()
+                            if (shoeId != null) {
+                                ShoeDetailScreen(navController, shoeId,
+                                    onBackClick = {
+                                        navController.navigate(Screen.Home.route) {
+                                            popUpTo(Screen.Home.route) {
+                                                inclusive = true
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

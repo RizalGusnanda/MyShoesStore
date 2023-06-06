@@ -31,15 +31,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberImagePainter
 import com.dicoding.myshoestore.R
 import com.dicoding.myshoestore.data.ShoeRepository
+import com.dicoding.myshoestore.ui.navigation.Screen
 import com.dicoding.myshoestore.ui.theme.MyShoesStoreTheme
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MyShoeStoreApp(
+    navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: MyShoesStoreViewModel = viewModel(factory = ViewModelFactory(ShoeRepository()))
 ) {
@@ -82,13 +86,15 @@ fun MyShoeStoreApp(
                     modifier = Modifier.background(MaterialTheme.colors.primary)
                 )
             }
-            items(shoes , key = { it.id}){shoe ->
+            items(shoes, key = { it.id }) { shoe ->
                 ShoeListItem(
                     name = shoe.name,
                     photoUrl = shoe.photoUrl,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .animateItemPlacement(tween(durationMillis = 100))
+                        .animateItemPlacement(tween(durationMillis = 100)),
+                    navController = navController,
+                    shoeId = shoe.id
                 )
             }
         }
@@ -112,7 +118,8 @@ fun MyShoeStoreApp(
 
         if (isSidebarVisible) {
             Sidebar(
-                onClose = { isSidebarVisible = false }
+                onClose = { isSidebarVisible = false },
+                navController = navController
             )
         }
     }
@@ -153,13 +160,20 @@ fun SearchBar(
 fun ShoeListItem(
     name: String,
     photoUrl: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    navController: NavController,
+    shoeId: Int
 ) {
     val showSidebar = remember { mutableStateOf(false) }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.clickable { showSidebar.value = true }
+        modifier = modifier.clickable {
+            navController.navigate(Screen.DetailShoe.createRoute(shoeId)) {
+                popUpTo(navController.graph.startDestinationId)
+                launchSingleTop = true
+            }
+        }
     ) {
         val painter = rememberImagePainter(
             data = photoUrl,
@@ -190,11 +204,7 @@ fun ShoeListItem(
         )
     }
 
-    if (showSidebar.value) {
-        Sidebar(
-            onClose = { showSidebar.value = false }
-        )
-    }
+
 }
 
 @Composable
@@ -223,7 +233,8 @@ fun ScrollToTopButton(
 @Composable
 fun Sidebar(
     onClose: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    navController: NavController
 ) {
     Card(
         modifier = modifier
@@ -235,15 +246,26 @@ fun Sidebar(
                 text = "Home",
                 style = MaterialTheme.typography.h6,
                 modifier = Modifier
-                    .clickable { onClose() }
+                    .clickable {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                        onClose()
+                    }
                     .padding(bottom = 10.dp)
-
             )
             Text(
-                text = "Settings",
+                text = "About",
                 style = MaterialTheme.typography.h6,
                 modifier = Modifier
-                    .clickable { onClose() }
+                    .clickable {
+                        navController.navigate(Screen.About.route) {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                        onClose()
+                    }
             )
         }
     }
@@ -253,7 +275,8 @@ fun Sidebar(
 @Composable
 fun MyShoesStoreAppPreview() {
     MyShoesStoreTheme() {
-        MyShoeStoreApp()
+        val navController = rememberNavController()
+        MyShoeStoreApp(navController = navController)
     }
 }
 
@@ -263,7 +286,10 @@ fun ShoeListItemPreview() {
     MyShoesStoreTheme() {
         ShoeListItem(
             name = "Ventela",
-            photoUrl = ""
+            photoUrl = "",
+            navController = rememberNavController(),
+            shoeId = 1 // Contoh shoeId
         )
     }
+
 }
