@@ -3,6 +3,8 @@ package com.dicoding.myshoestore.ui.home
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,8 +14,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,7 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import coil.compose.rememberImagePainter
 import com.dicoding.myshoestore.R
 import com.dicoding.myshoestore.data.ShoeRepository
 import com.dicoding.myshoestore.ui.theme.MyShoesStoreTheme
@@ -41,7 +45,8 @@ fun MyShoeStoreApp(
 ) {
     val shoes by viewModel.shoes.collectAsState()
     val query by viewModel.query
-    val isSidebarOpen = remember { mutableStateOf(false) }
+
+    var isSidebarVisible by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
         val scope = rememberCoroutineScope()
@@ -49,58 +54,44 @@ fun MyShoeStoreApp(
         val showButton: Boolean by remember {
             derivedStateOf { listState.firstVisibleItemIndex > 0 }
         }
-        Row {
-            if (isSidebarOpen.value) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(200.dp)
-                        .background(MaterialTheme.colors.surface)
-                ) {
-                    SearchBar(
-                        query = query,
-                        onQueryChange = viewModel::search,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-            }
-            LazyColumn(
-                state = listState,
-                contentPadding = PaddingValues(bottom = 80.dp)
-            ) {
-                item {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .background(MaterialTheme.colors.primary)
-                            .fillMaxWidth()
-                            .clickable { isSidebarOpen.value = !isSidebarOpen.value }
-                            .padding(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text(
-                            text = "Search",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(bottom = 80.dp)
+        ) {
+            item {
+                TopAppBar(
+                    title = {
+
+                    },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = { isSidebarVisible = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = stringResource(R.string.menu)
+                            )
+                        }
                     }
-                }
-                items(shoes, key = { it.id }) { shoe ->
-                    ShoeListItem(
-                        name = shoe.name,
-                        photoUrl = shoe.photoUrl,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateItemPlacement(tween(durationMillis = 100))
-                    )
-                }
+                )
+            }
+            item {
+                SearchBar(
+                    query = query,
+                    onQueryChange = viewModel::search,
+                    modifier = Modifier.background(MaterialTheme.colors.primary)
+                )
+            }
+            items(shoes , key = { it.id}){shoe ->
+                ShoeListItem(
+                    name = shoe.name,
+                    photoUrl = shoe.photoUrl,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateItemPlacement(tween(durationMillis = 100))
+                )
             }
         }
-
 
         AnimatedVisibility(
             visible = showButton,
@@ -118,59 +109,12 @@ fun MyShoeStoreApp(
                 }
             )
         }
-    }
-}
 
-@Composable
-fun ShoeListItem(
-    name: String,
-    photoUrl: String,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.clickable {}
-    ) {
-        AsyncImage(
-            model = photoUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .padding(8.dp)
-                .size(60.dp)
-                .clip(CircleShape)
-        )
-        Text(
-            text = name,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(start = 16.dp)
-        )
-    }
-}
-
-@Composable
-fun ScrollToTopButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .shadow(10.dp, shape = CircleShape)
-            .clip(shape = CircleShape)
-            .size(56.dp),
-        colors = ButtonDefaults.buttonColors(
-            backgroundColor = Color.White,
-            contentColor = MaterialTheme.colors.primary
-        )
-    ) {
-        Icon(
-            imageVector = Icons.Filled.KeyboardArrowUp,
-            contentDescription = stringResource(R.string.scroll_to_top),
-        )
+        if (isSidebarVisible) {
+            Sidebar(
+                onClose = { isSidebarVisible = false }
+            )
+        }
     }
 }
 
@@ -199,11 +143,110 @@ fun SearchBar(
             Text(stringResource(R.string.search_shoes))
         },
         modifier = modifier
-            .padding(16.dp)
+            .padding(start = 8.dp, bottom = 10.dp) // Mengatur margin kiri menjadi 8.dp
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(16.dp))
     )
+}
+@Composable
+fun ShoeListItem(
+    name: String,
+    photoUrl: String,
+    modifier: Modifier = Modifier
+) {
+    val showSidebar = remember { mutableStateOf(false) }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.clickable { showSidebar.value = true }
+    ) {
+        val painter = rememberImagePainter(
+            data = photoUrl,
+            builder = {
+                crossfade(true)
+                placeholder(R.drawable.place_holder) // Placeholder image resource
+                error(R.drawable.error) // Error image resource
+            }
+        )
+
+        Image(
+            painter = painter,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .padding(8.dp)
+                .size(60.dp)
+                .clip(CircleShape)
+        )
+
+        Text(
+            text = name,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(start = 16.dp)
+        )
+    }
+
+    if (showSidebar.value) {
+        Sidebar(
+            onClose = { showSidebar.value = false }
+        )
+    }
+}
+
+@Composable
+fun ScrollToTopButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .shadow(10.dp, shape = CircleShape)
+            .clip(shape = CircleShape)
+            .size(56.dp),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = Color.White,
+            contentColor = MaterialTheme.colors.primary
+        )
+    ) {
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowUp,
+            contentDescription = stringResource(R.string.scroll_to_top),
+        )
+    }
+}
+
+@Composable
+fun Sidebar(
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .width(200.dp)
+            .fillMaxHeight()
+    ) {
+        Column(modifier = Modifier.padding(top = 50.dp, start = 40.dp )) {
+            Text(
+                text = "Home",
+                style = MaterialTheme.typography.h6,
+                modifier = Modifier
+                    .clickable { onClose() }
+                    .padding(bottom = 10.dp)
+
+            )
+            Text(
+                text = "Settings",
+                style = MaterialTheme.typography.h6,
+                modifier = Modifier
+                    .clickable { onClose() }
+            )
+        }
+    }
 }
 
 @Preview(showBackground = true)
